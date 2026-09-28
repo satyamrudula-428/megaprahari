@@ -1,0 +1,9 @@
+# Optional AI engine (PhysicsGuidedMTLTransformer) and explainability. Kept out of the base image: PyTorch is large.
+#
+# Install the CPU-only PyTorch build FIRST (much smaller than the default CUDA build; no GPU needed for this model):
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements-ai.txt
+# A plain `pip install -r requirements-ai.txt` also works but may download the large CUDA build on Linux.
+torch>=2.5,<3
+captum>=0.7        # integrated gradients / attributions for the Transformer (task I3)
+shap>=0.45         # SHAP values for the gradient-boosting models (task I2)

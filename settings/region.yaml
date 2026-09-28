@@ -1,0 +1,37 @@
+# Pilot region and replay events (tasks A1, A2, B7). Loaded and validated by mp.settings.load_region.
+# Everyone on the team downloads data for THIS box and THESE dates (see documentation/plan/DATA_SETUP.md).
+region:
+  id: mandi_pilot
+  name: Mandi, Himachal Pradesh
+  bbox: {lat_min: 31.5, lat_max: 32.0, lon_min: 76.8, lon_max: 77.3}   # degrees, EPSG:4326
+  met_margin_deg: 0.5            # extra margin around bbox when downloading ~12 km met data (degrees)
+grid:
+  dem_arcsec: 1.0                # SRTM GL1 / CartoDEM resolution (arc-seconds); ~30 m
+  max_dem_cells: 4000000         # must match the tile limit in tools/build_atlas.py
+# Replay events are held out of training and calibration (hard rule 6): every download window below is excluded.
+# status: confirmed = inside a defined box with dates agreed; candidate = still to be confirmed (still excluded).
+replay_events:
+  - id: mandi_2025_06_30
+    name: Mandi cloudbursts
+    status: confirmed
+    hazards: [cb, ff]
+    event_start: 2025-06-30      # dates (UTC); exact onset times come from the event ledger (task F1)
+    event_end: 2025-07-01
+    download_start: 2025-06-29
+    download_end: 2025-07-02
+  - id: dharali_2025_08_05
+    name: Dharali (Uttarkashi) cloudburst / flash flood
+    status: candidate            # OUTSIDE the Mandi box: needs its own bbox, DEM and atlas before it can be replayed
+    hazards: [cb, ff]
+    event_start: 2025-08-05
+    event_end: 2025-08-05
+    download_start: 2025-08-04
+    download_end: 2025-08-06
+  - id: padhar_2024_07_31
+    name: Padhar / Chauhar valley cloudbursts (Mandi)
+    status: confirmed            # second test event: night of 31 Jul - 1 Aug 2024 (HPSDMA via SANDRP; news)
+    hazards: [cb, ff]            # in the 2024 calibration year: excluded from training AND calibration
+    event_start: 2024-07-31      # worst-hit Rajban/Terang lie ~1 km north of the pilot box edge (32.0 N)
+    event_end: 2024-08-01
+    download_start: 2024-07-30
+    download_end: 2024-08-02

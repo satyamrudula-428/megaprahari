@@ -1,0 +1,163 @@
+# MeghPrahari settings. Every CHANGE_ME must be set: the API and worker refuse to start otherwise (fail closed).
+mode: live                       # live | replay  (replay processes ARCHIVED real files in time order, forces shadow + hindcast flags)
+shadow_mode: true                # true => CAP status "Exercise"/scope "Restricted"; nothing is ever marked "Actual". Keep true until go-live gates pass.
+model:
+  backend: gbm                   # gbm (per-target gradient boosting, baseline + fallback) | transformer (approved 'mtl' model)
+features: v2                     # v1 (17 features) | v2 (+ CAPE, CIN, 3-h CIN change; needs met.surface_vars)
+atlas_id: mandi_v1               # id used when running tools/build_atlas.py (built 2026-09-23 from SRTM GL1)
+sender: meghprahari.demo         # CAP sender identifier; demo value until the authorising body issues one
+sender_name: MeghPrahari Exercise
+outbox_dir: /data/outbox
+rain_source: mera                # rain section feeding the features: hem (MOSDAC, not yet available) | imerg | mera
+                                 # mera chosen 2026-09-23: IMERG (0.1 deg) missed the Siyanj cloudburst that MERA (4 km, radar) shows
+landing:
+  hem_dir: /data/landing/hem     # drop (or auto-download) INSAT-3DR HEM files here
+  met_dir: /data/landing/met     # drop IMDAA / IMDAA-Like NetCDF files here
+  min_age_s: 10                  # ignore files still being written
+hem:
+  pattern: "*.h5"
+  time_regex: CHANGE_ME          # regex with ONE group capturing the timestamp in the file name (check your real file names)
+  time_format: CHANGE_ME         # strptime format of that group
+  var: CHANGE_ME                 # variable names as they appear in YOUR downloaded product (inspect with h5dump / ncdump)
+  lat_var: CHANGE_ME
+  lon_var: CHANGE_ME
+  scale: 1.0
+  offset: 0.0
+  fill_values: [-999.0]          # set to the product's fill value(s)
+  max_mm_h: 500.0
+  cadence_min: 30
+  pixel_km: 4.0                  # ~4 km nominal; verify for your crop
+  growth_thr_mm_h: 10.0
+  cell_thr_mm_h: 10.0
+imerg:                           # NASA GPM IMERG Final V07 half-hourly (GPM_3IMERGHH): stand-in for HEM until MOSDAC data arrives
+  dir: /data/landing/GPM_3IMERGHH_07
+  pattern: "*.HDF5"
+  time_regex: "3IMERG\\.(\\d{8}-S\\d{6})"   # e.g. 3B-HHR.MS.MRG.3IMERG.20250630-S193000-E195959.1170.V07B.HDF5 (start time, UTC)
+  time_format: "%Y%m%d-S%H%M%S"
+  var: Grid/precipitation        # names/units/fill as inspected in the real files (documentation/DATA_REGISTER.md)
+  lat_var: Grid/lat
+  lon_var: Grid/lon
+  axis_order: "lon,lat"          # IMERG stores (time, lon, lat)
+  bbox: {lat_min: 30.0, lat_max: 33.0, lon_min: 76.0, lon_max: 78.0}   # crop the global grid (degrees)
+  scale: 1.0                     # file units are mm/hr
+  offset: 0.0
+  fill_values: [-9999.9]
+  max_mm_h: 500.0
+  cadence_min: 30
+  pixel_km: 10.0                 # 0.1 deg ~ 11.1 km N-S, ~9.4 km E-W at 31.7 N
+  growth_thr_mm_h: 10.0
+  cell_thr_mm_h: 10.0
+imerg_nrt:                       # NASA GPM IMERG Early Run V07 half-hourly (GPM_3IMERGHHE): LIVE rain feed (~4 h latency, no
+                                 # gauge correction), fetched by tools/live_imerg.py. Same layout as imerg: (verified on a
+                                 # real file 2026-09-24); set rain_source: imerg_nrt to use this in live mode instead.
+  dir: /data/landing/GPM_3IMERGHHE_07_nrt
+  pattern: "*.HDF5"
+  time_regex: "3IMERG\\.(\\d{8}-S\\d{6})"   # e.g. 3B-HHR-E.MS.MRG.3IMERG.20260924-S040000-E042959.0240.V07C.HDF5 (start time, UTC)
+  time_format: "%Y%m%d-S%H%M%S"
+  var: Grid/precipitation
+  lat_var: Grid/lat
+  lon_var: Grid/lon
+  axis_order: "lon,lat"
+  bbox: {lat_min: 30.0, lat_max: 33.0, lon_min: 76.0, lon_max: 78.0}
+  scale: 1.0
+  offset: 0.0
+  fill_values: [-9999.9]
+  max_mm_h: 500.0
+  cadence_min: 30
+  pixel_km: 10.0
+  growth_thr_mm_h: 10.0
+  cell_thr_mm_h: 10.0
+mera:                            # NCMRWF MERA hourly rain analysis, 0.0375 deg (satellite + radar)
+  dir: /data/landing/mera
+  pattern: "mera_*.nc"
+  time_regex: "mera_(\\d{10})"   # mera_YYYYMMDDHH.nc; matches the time variable in the file
+  time_format: "%Y%m%d%H"
+  time_zone_confirmed: false     # INFERRED UTC: hourly series matches IMERG (UTC) at 0/+1 h lag; not stated in the file
+  var: Rainfall
+  lat_var: latitude
+  lon_var: longitude
+  scale: 1.0
+  units_confirmed: false         # INFERRED mm per hour: source path 'APCP-sfc' (accumulated precipitation, kg/m2 = mm) in
+                                 # hourly files; magnitudes plausible. No units attribute. Confirm from NCMRWF documentation
+  offset: 0.0
+  fill_values: [-999.0]
+  max_mm_h: 500.0
+  cadence_min: 60
+  pixel_km: 4.0                  # 0.0375 deg ~ 4.2 km N-S, ~3.5 km E-W at 31.7 N
+  growth_thr_mm_h: 10.0
+  cell_thr_mm_h: 10.0
+ctt:                             # NOAA GridSat-B1 (variable irwin_cdr), TRAINING/REPLAY only -- not live-capable (see backend/meghprahari/ctt.py).
+                                 # Files are pre-cropped, no-login downloads from tools/fetch_gridsat.py.
+  dir: /data/landing/gridsat
+  pattern: "gridsat_*.nc"
+  time_regex: "gridsat_(\\d{10})"   # gridsat_YYYYMMDDHH.nc, matches fetch_gridsat.py's out_name()
+  time_format: "%Y%m%d%H"
+  var: irwin_cdr
+  lat_var: lat
+  lon_var: lon
+  scale: 1.0                     # netCDF4 applies the file's own scale_factor/add_offset/_FillValue on read
+  offset: 0.0
+  fill_values: []
+  valid_min_k: 140.0             # GridSat-B1's own 'valid_range' attribute
+  valid_max_k: 375.0
+  cadence_min: 180
+  pixel_km: 8.0                  # nominal GridSat-B1 grid spacing at low latitude
+  cold_thr_k: 221.0              # convective-overshoot cut-off used for sat_cold_area_km2 (tune per basin/season)
+met:                             # ERA5 pressure levels (Copernicus CDS) for 2025: NCMRWF RDS has no 2025 IMDAA-like product
+  dir: /data/landing/era5_pl
+  pattern: "era5_pl_*.nc"
+  time_var: valid_time           # many times per file: times come from this variable, not from the file name
+  time_regex: null
+  time_format: null
+  ps_file: /data/landing/era5_sl/era5_sl_2025_jun_jul.nc   # ERA5 single levels (sp, z, cape, cin, ...) from ARCO-ERA5 via tools/fetch_arco_era5.py
+  max_age_h: 6
+  terrain_file: /data/atlas/terrain_on_met_grid.npz   # npz with lat, lon, h (m) on the met grid: ERA5 orography (fetch_arco_era5.py --terrain-out)
+  vars: {q: q, t: t, u: u, v: v, ps: sp, level: pressure_level, lat: latitude, lon: longitude}
+  surface_vars: {cape: cape, cin: cin}                # J/kg, read from ps_file (ERA5 single levels)
+  levels_hpa: [1000, 950, 900, 850, 800, 750, 700, 650, 600, 500, 400, 300, 200]   # same levels in training and test files
+  units: {q_scale: 1.0, ps_scale: 0.01, level_scale: 1.0}   # file: q kg/kg, levels hPa; ps_scale 0.01 = Pa->hPa (sp is in Pa (checked))
+met_nrt:                         # NOAA GFS 0.25deg analysis: LIVE atmospheric-ingredients feed (ERA5 arrives ~5 days late),
+                                 # fetched+converted by tools/live_gfs.py. Same grid/layout/units as met: (verified on a real
+                                 # file 2026-09-24; CIN sign-flipped to match ERA5's positive-magnitude convention -- see the
+                                 # script's docstring). One file per run holds q/t/u/v AND sp/cape/cin together (no ps_file
+                                 # needed). Set met_source: met_nrt to use this in live mode instead of ERA5.
+  dir: /data/landing/gfs_nrt
+  pattern: "gfs_*.nc"
+  time_var: valid_time
+  time_regex: null
+  time_format: null
+  ps_file: null
+  max_age_h: 6                   # GFS analysis publishes ~4 h after the run time; a new run every 6 h
+  terrain_file: /data/atlas/terrain_on_met_grid.npz   # same ERA5-derived grid; GFS 0.25deg shares its exact lattice (checked)
+  vars: {q: q, t: t, u: u, v: v, ps: sp, level: pressure_level, lat: latitude, lon: longitude}
+  surface_vars: {cape: cape, cin: cin}
+  levels_hpa: [1000, 950, 900, 850, 800, 750, 700, 650, 600, 500, 400, 300, 200]
+  units: {q_scale: 1.0, ps_scale: 0.01, level_scale: 1.0}
+labels:                          # used by tools/build_training_table.py; proxy definitions, agree them with a domain expert
+  ts_mm_h: 10.0
+  cb_mm_h: 50.0                  # used only when cb_rule is 'peak'
+  cb_rule: accum                 # cloudburst-type extreme rain = a 3-h total >= cb_accum_mm within neighbourhood_km
+  cb_accum_h: 3
+  cb_accum_mm: 33.0              # rule: P99.9 of per-pixel 3-h totals in the TRAINING years only (MERA 2021-22, pilot box)
+                                 # = 33.0 mm (~5-6 separate events/season). 2023 (calibration) and 2024 (test) not used.
+                                 # MERA (4 km, hourly) cannot resolve true cloudburst rates (~100 mm/h at a point): this is
+                                 # an extreme short-duration rain PROXY
+  neighbourhood_km: 10.0         # label = rain within this radius of the catchment point (avoids double penalty for small displacements)
+  ff_mm: null                    # single threshold (mm) over each catchment's Tc window; unused when ff_mm_file is set
+  ff_mm_file: /data/atlas/ff_thresholds.csv   # per-catchment P99.9 of Tc-window totals, MERA 2021-22 = training years (tools/ff_thresholds.py);
+                                 # a rare-rain PROXY for flash floods, not a hydrological threshold (task E6)
+alerts:
+  walk_speed_kmh: 3.0
+  detour_factor: 1.5
+  dissemination_delay_min: 15
+  lag_fraction: 0.0              # 0 = conservative; Tc only ever adds time
+  horizon_min: 180
+  radius_km: 3.0
+  down_needed: 4
+  release: 0.8
+  up_needed: {1: 1, 2: 2, 3: 2}
+  languages: [en, hi]            # CAP <info> blocks; Hindi text is a DRAFT to be reviewed by the issuing authority
+worker:
+  poll_s: 60
+  store_min_prob: 0.02
+  retention_days: 14

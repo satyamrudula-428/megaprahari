@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: meghprahari
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: MP_DATABASE_URL
+        fromDatabase:
+          name: meghprahari-db
+          property: connectionString
+      - key: MP_JWT_SECRET
+        sync: false
+      - key: MP_DEMO_PASSWORD
+        sync: false
+
+databases:
+  - name: meghprahari-db
+    plan: free

@@ -1,0 +1,7 @@
+# Baselines and verification (tasks G2, G3, H1-H7). Not needed by the API or worker.
+-r requirements.txt
+pysteps>=1.10      # extrapolation nowcast baseline
+matplotlib>=3.8    # reliability diagrams and slide plots
+zarr>=2.18,<3      # tools/fetch_arco_era5.py (public ARCO-ERA5, no login)
+gcsfs>=2024.2
+cdsapi>=0.7        # tools/fetch_era5_cds.py (ERA5 training data; needs ~/.cdsapirc)

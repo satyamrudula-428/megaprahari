@@ -1,0 +1,22 @@
+# Core service + science dependencies (API, worker, scripts). Installed in the Docker image.
+numpy>=1.26
+scipy>=1.11
+pandas>=2.1
+scikit-learn>=1.4
+scikit-image>=0.22
+joblib>=1.3
+PyYAML>=6.0
+PyJWT>=2.7
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+psycopg[binary,pool]>=3.1
+h5py>=3.10
+netCDF4>=1.6
+rasterio>=1.3
+xarray>=2024.1
+# MetPy: RH -> specific humidity (C4) and CAPE/CIN (D3). Pulls in pint and matplotlib.
+metpy>=1.6
+# GRIB2 reader for the live GFS met feed (tools/live_gfs.py); ships a prebuilt eccodes wheel, no MSVC Build Tools needed.
+cfgrib>=0.9.15
+requests>=2.31

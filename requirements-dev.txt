@@ -1,0 +1,4 @@
+# Developer tools. Tests use unittest (`make test`); pytest is optional as a nicer runner and discovers the same tests.
+-r requirements.txt
+pytest>=8
+xmlschema>=3        # validates CAP output against the OASIS CAP 1.2 XSD in tests (task J2)

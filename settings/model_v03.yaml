@@ -1,0 +1,21 @@
+# MeghPrahari v0.3 model settings
+model:
+  backend: physics_guided_mtl_transformer
+  sequence_steps: 12
+  cadence_min: 30
+  d_model: 64
+  attention_heads: 4
+  transformer_layers: 2
+  feedforward_dim: 128
+  dropout: 0.10
+  calibration: temperature_scaling
+  # The Transformer is trained on event-ledger labels before operational use.
+  # Synthetic demo labels are never valid evidence of weather skill.
+
+efficiency:
+  risk_adaptive_compute: true
+  anomaly_gate:
+    iwv_change_threshold: CHANGE_ME
+    rain_acceleration_threshold: CHANGE_ME
+  low_risk_backend: cached_feature_model
+  high_risk_backend: physics_guided_mtl_transformer
